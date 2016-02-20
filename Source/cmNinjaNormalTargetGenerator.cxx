@@ -504,6 +504,14 @@ void cmNinjaNormalTargetGenerator::WriteLinkStatement()
       }
     }
 
+  // Add OSX version flags, if any.
+  if(this->GeneratorTarget->GetType() == cmState::SHARED_LIBRARY ||
+     this->GeneratorTarget->GetType() == cmState::MODULE_LIBRARY)
+    {
+    this->AppendOSXVerFlag(vars["LINK_FLAGS"], this->TargetLinkLanguage, "COMPATIBILITY", true);
+    this->AppendOSXVerFlag(vars["LINK_FLAGS"], this->TargetLinkLanguage, "CURRENT", false);
+    }
+
   this->addPoolNinjaVariable("JOB_POOL_LINK", &gt, vars);
 
   this->AddModuleDefinitionFlag(vars["LINK_FLAGS"]);
@@ -792,4 +800,50 @@ void cmNinjaNormalTargetGenerator::WriteObjectLibStatement()
   // Add aliases for the target name.
   this->GetGlobalGenerator()->AddTargetAlias(this->GetTargetName(),
                                              this->GetGeneratorTarget());
+}
+
+//----------------------------------------------------------------------------
+void
+cmNinjaNormalTargetGenerator
+::AppendOSXVerFlag(std::string& flags, const std::string& lang,
+                   const char* name, bool so)
+{
+  // Lookup the flag to specify the version.
+  std::string fvar = "CMAKE_";
+  fvar += lang;
+  fvar += "_OSX_";
+  fvar += name;
+  fvar += "_VERSION_FLAG";
+  const char* flag = this->Makefile->GetDefinition(fvar);
+
+  // Skip if no such flag.
+  if(!flag)
+    {
+    return;
+    }
+
+  // Lookup the target version information.
+  int major;
+  int minor;
+  int patch;
+  this->GeneratorTarget->GetTargetVersion(so, major, minor, patch);
+  if(major > 0 || minor > 0 || patch > 0)
+    {
+    // Append the flag since a non-zero version is specified.
+    std::ostringstream vflag;
+    vflag << flag << major << "." << minor << "." << patch;
+    this->AppendFlags(flags, vflag.str());
+    }
+}
+void cmNinjaNormalTargetGenerator::AppendFlags(std::string& flags,
+                                   const std::string& newFlags)
+{
+  if(!newFlags.empty())
+    {
+    if(!flags.empty())
+      {
+      flags += " ";
+      }
+    flags += newFlags;
+    }
 }

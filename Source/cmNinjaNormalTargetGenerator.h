@@ -48,6 +48,11 @@ private:
   std::string TargetNameImport;
   std::string TargetNamePDB;
   std::string TargetLinkLanguage;
+
+  void AppendOSXVerFlag(std::string& flags, const std::string& lang,
+                        const char* name, bool so);
+  void AppendFlags(std::string& flags,
+		   const std::string& newFlags);
 };
 
 #endif // ! cmNinjaNormalTargetGenerator_h
